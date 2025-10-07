@@ -1,7 +1,6 @@
 %{
 #include <stdio.h>
 extern int yylex();
-extern int yyerror(const char *);
 int valid = 1;
 %}
 

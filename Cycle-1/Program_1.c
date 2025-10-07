@@ -10,10 +10,8 @@ int main() {
 
     printf("How many states? ");
     scanf("%d", &n);
-    
-    printf("Enter states: ");
+    printf("Enter states: ");  
     for (i = 0; i < n; i++) scanf("%s", states[i]);
-=
     FILE *f = fopen("automata.txt", "r");
     if (!f) return printf("File error\n"), 1;
     

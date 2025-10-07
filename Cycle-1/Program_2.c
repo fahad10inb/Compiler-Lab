@@ -1,22 +1,25 @@
 #include <stdio.h>
 
-#define MAX 10
+#define MAX 5
 
-int states, symbols;
-char alpha[MAX];           // input symbols (last one is epsilon)
-int trans[MAX][MAX][MAX];  // transitions[from][symbol][to]
-int final[MAX];            // final states
+int states = 3, symbols = 3; // symbols: a, b, e (e for epsilon)
+char alpha[] = {'a', 'b', 'e'};
 
-// Compute epsilon closure of a state
-void epsilonClosure(int state, int closure[]) {
-    if (closure[state]) return;
-    closure[state] = 1;
-    for (int next = 0; next < states; next++)
-        if (trans[state][symbols-1][next])  // epsilon is last symbol
-            epsilonClosure(next, closure);
+// transitions[from][symbol][to] = 1 if transition exists
+int trans[3][3][3] = {
+    { {0,1,0}, {0,0,0}, {0,0,1} },  // q0: a→q1, ε→q2
+    { {0,0,1}, {1,0,0}, {0,0,0} },  // q1: a→q2, b→q07
+    { {0,0,0}, {0,0,0}, {0,0,0} }   // q2: no transitions
+};
+
+// Recursive epsilon closure
+void epsilonClosure(int s, int closure[]) {
+    if (closure[s]) return;
+    closure[s] = 1;
+    for (int t = 0; t < states; t++)
+        if (trans[s][2][t]) epsilonClosure(t, closure);
 }
 
-// Print set of states
 void printSet(int set[]) {
     printf("{ ");
     for (int i = 0; i < states; i++)
@@ -25,75 +28,36 @@ void printSet(int set[]) {
 }
 
 int main() {
-    int start, numFinal, numTrans;
-
-    printf("Number of states: ");
-    scanf("%d", &states);
-
-    printf("Number of symbols (include epsilon 'e'): ");
-    scanf("%d", &symbols);
-
-    printf("Enter symbols: ");
-    for (int i = 0; i < symbols; i++)
-        scanf(" %c", &alpha[i]);
-
-    printf("Start state: ");
-    scanf("%d", &start);
-
-    printf("Number of final states: ");
-    scanf("%d", &numFinal);
-    printf("Enter final states: ");
-    for (int i = 0; i < numFinal; i++) {
-        int f; scanf("%d", &f);
-        final[f] = 1;
-    }
-
-    printf("Number of transitions: ");
-    scanf("%d", &numTrans);
-    printf("Enter transitions (from symbol to):\n");
-    for (int i = 0; i < numTrans; i++) {
-        int from, to; char sym;
-        scanf("%d %c %d", &from, &sym, &to);
-
-        int symIndex = 0;
-        for (; symIndex < symbols; symIndex++)
-            if (alpha[symIndex] == sym) break;
-
-        trans[from][symIndex][to] = 1;
-    }
-
-    // Compute epsilon closures
     int closure[MAX][MAX] = {0};
+
+    // Compute epsilon-closures
     for (int i = 0; i < states; i++)
         epsilonClosure(i, closure[i]);
 
-    // Print NFA transitions
-    printf("\nEquivalent NFA transitions:\n");
+    printf("Epsilon Closures:\n");
     for (int i = 0; i < states; i++) {
-        for (int j = 0; j < symbols-1; j++) {  // skip epsilon
+        printf("ε-closure(q%d) = ", i);
+        printSet(closure[i]);
+        printf("\n");
+    }
+
+    // Print transitions ignoring epsilon
+    printf("\nNFA Transitions:\n");
+    for (int i = 0; i < states; i++) {
+        for (int j = 0; j < symbols - 1; j++) { // skip epsilon
             int result[MAX] = {0};
-            for (int s = 0; s < states; s++) {
-                if (closure[i][s]) {
+            for (int s = 0; s < states; s++)
+                if (closure[i][s])
                     for (int t = 0; t < states; t++)
                         if (trans[s][j][t])
                             for (int k = 0; k < states; k++)
                                 if (closure[t][k]) result[k] = 1;
-                }
-            }
             printf("From ");
             printSet(closure[i]);
-            printf(" on %c -> ", alpha[j]);
+            printf(" on '%c' -> ", alpha[j]);
             printSet(result);
             printf("\n");
         }
     }
-
-    // Print final states of NFA
-    printf("\nFinal states of NFA: ");
-    for (int i = 0; i < states; i++)
-        for (int j = 0; j < states; j++)
-            if (closure[i][j] && final[j]) { printSet(closure[i]); break; }
-
-    printf("\n");
     return 0;
 }
