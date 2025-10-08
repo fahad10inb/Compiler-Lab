@@ -6,24 +6,16 @@ void yyerror(const char *s);
 int yylex(void);
 %}
 
-%union {
-    int ival;
-    char *sval;
-}
-
 %token FOR LPAREN RPAREN SEMICOLON ASSIGN LT GT LE GE EQ INC DEC
-%token <ival> NUMBER
-%token <sval> ID
+%token NUMBER
+%token ID
 
 %%
 
-stmt : FOR LPAREN expr_opt SEMICOLON expr_opt SEMICOLON expr_opt RPAREN
+stmt : FOR LPAREN expr SEMICOLON expr SEMICOLON expr RPAREN
        { printf("Valid FOR statement syntax\n"); }
      ;
 
-expr_opt : /* empty */
-         | expr
-         ;
 
 expr : ID ASSIGN expr
      | ID
@@ -35,6 +27,7 @@ expr : ID ASSIGN expr
      | expr EQ expr
      | ID INC
      | ID DEC
+     | /*empty*/
      ;
 
 %%
