@@ -1,28 +1,24 @@
 #include <stdio.h>
+#include <string.h>
 
-#define MAX 5
+#define MAX 10
 
-int states = 3, symbols = 3; // symbols: a, b, e (e for epsilon)
-char alpha[] = {'a', 'b', 'e'};
+int states, symbols;
+char alpha[MAX];         // alphabet symbols (including 'e')
+int trans[MAX][MAX][MAX]; // transitions[from][symbol][to]
+int closure[MAX][MAX];   // epsilon closures
 
-int startState = 0;
-int finalStates[] = {2};
-int numFinalStates = 1;
+// Recursive epsilon closure finder
 
-// transitions[from][symbol][to] = 1 if transition exists
-int trans[3][3][3] = {
-    { {0,1,0}, {0,0,0}, {0,0,1} },  // q0: a→q1, ε→q2
-    { {0,0,1}, {1,0,0}, {0,0,0} },  // q1: a→q2, b→q0
-    { {0,0,0}, {0,0,0}, {0,0,0} }   // q2: no transitions
-};
-
-void epsilonClosure(int s, int closure[]) {
-    if (closure[s]) return;
-    closure[s] = 1;
+void epsilonClosure(int s, int closureRow[]) {
+    if (closureRow[s]) return;  // already visited
+    closureRow[s] = 1;          // mark current
     for (int t = 0; t < states; t++)
-        if (trans[s][2][t]) epsilonClosure(t, closure);
+        if (trans[s][symbols][t])   // last symbol is 'e'
+            epsilonClosure(t, closureRow);
 }
 
+// Function to print set of states
 void printSet(int set[]) {
     printf("{ ");
     for (int i = 0; i < states; i++)
@@ -30,57 +26,63 @@ void printSet(int set[]) {
     printf("}");
 }
 
-int isFinal(int state) {
-    for (int i = 0; i < numFinalStates; i++)
-        if (finalStates[i] == state) return 1;
-    return 0;
-}
-
 int main() {
-    int closure[MAX][MAX] = {0};
+    printf("Enter number of states: ");
+    scanf("%d", &states);
 
-    for (int i = 0; i < states; i++)
-        epsilonClosure(i, closure[i]);
+    printf("Enter number of input symbols (excluding epsilon): ");
+    scanf("%d", &symbols);
 
-    printf("Epsilon Closures:\n");
+    alpha[symbols] = 'e'; // Add epsilon symbol as last
+    printf("Enter symbols: ");
+    for (int i = 0; i < symbols; i++)
+        scanf(" %c", &alpha[i]);
+
+    printf("Enter transitions (1 for present, 0 for absent):\n");
     for (int i = 0; i < states; i++) {
-        printf("ε-closure(q%d) = ", i);
+        for (int j = 0; j < symbols + 1; j++) {
+            for (int k = 0; k < states; k++) {
+                printf("Transition from q%d on '%c' to q%d? (1/0): ", i, j == symbols ? 'e' : alpha[j], k);
+                scanf("%d", &trans[i][j][k]);
+            }
+        }
+    }
+
+    // Compute epsilon closures for each state
+    for (int i = 0; i < states; i++) {
+        for (int j = 0; j < states; j++) closure[i][j] = 0;
+        epsilonClosure(i, closure[i]);
+    }
+
+    printf("\n--- Epsilon Closures ---\n");
+    for (int i = 0; i < states; i++) {
+        printf("E-closure(q%d) = ", i);
         printSet(closure[i]);
         printf("\n");
     }
 
-    printf("\nStart State: q%d\n", startState);
-    printf("Final States: ");
-    for (int i = 0; i < numFinalStates; i++) printf("q%d ", finalStates[i]);
-    printf("\n");
-
-    printf("\nNFA Transitions (excluding ε):\n");
+    printf("\n--- NFA Transitions (after removing epsilon) ---\n");
     for (int i = 0; i < states; i++) {
-        for (int j = 0; j < symbols - 1; j++) { // skip epsilon
+        for (int j = 0; j < symbols; j++) { // skip epsilon
             int result[MAX] = {0};
+
+            // For each state in ε-closure(qi)
             for (int s = 0; s < states; s++)
                 if (closure[i][s])
                     for (int t = 0; t < states; t++)
                         if (trans[s][j][t])
+                            // add ε-closure of target
                             for (int k = 0; k < states; k++)
                                 if (closure[t][k]) result[k] = 1;
 
-            printf("From ");
-            printSet(closure[i]);
-            printf(" on '%c' -> ", alpha[j]);
+            printf("From E-closure(q%d) on '%c' -> ", i, alpha[j]);
             printSet(result);
             printf("\n");
         }
     }
 
-    // Show epsilon closure of start state and its reachable finals
-    printf("\nε-closure of Start State (q%d): ", startState);
-    printSet(closure[startState]);
-    printf("\n");
-    printf("Reachable Final States: ");
-    for (int i = 0; i < states; i++)
-        if (closure[startState][i] && isFinal(i)) printf("q%d ", i);
-    printf("\n");
-
     return 0;
 }
+
+
+
